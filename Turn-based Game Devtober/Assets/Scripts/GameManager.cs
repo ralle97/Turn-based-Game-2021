@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
     [HideInInspector]
     public static GameManager instance;
 
+    #region Singleton
+
     private void Awake()
     {
         if (instance != null)
@@ -23,13 +25,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void Start()
-    {
-        
-    }
+    #endregion
 
-    void Update()
-    {
-        
-    }
+    [HideInInspector]
+    public string area = "Main";
+    [HideInInspector]
+    public bool isBossBattle = false;
+    [HideInInspector]
+    public int miniBossesDefeated = 0;
+
+    public List<Item> items;
 }
