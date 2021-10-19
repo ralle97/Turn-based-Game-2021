@@ -16,13 +16,10 @@ public class ItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public Button useButton;
 
-    private TextMeshProUGUI descriptionUI;
-
     private void Start()
     {
         icon.sprite = item.itemIcon;
         nameText.text = item.itemName;
-        //descriptionText.text = item.itemDescription;
         countText.text = "x " + item.itemCount;
 
         descriptionText = GameObject.Find("DescriptionText").GetComponent<TextMeshProUGUI>();
@@ -42,7 +39,7 @@ public class ItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public void OnUseButton()
     {
-        GameObject.Find("BattleManager").GetComponent<BattleManager>().UseItem(item);
+        StartCoroutine(GameObject.Find("BattleManager").GetComponent<BattleManager>().UseItem(item));
         countText.text = "x " + item.itemCount;
     }
 }

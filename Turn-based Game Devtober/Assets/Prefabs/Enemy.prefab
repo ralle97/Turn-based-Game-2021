@@ -102,5 +102,5 @@ MonoBehaviour:
   currentHP: 10
   maxMP: 0
   currentMP: 0
-  experience: 0
+  experience: 10
   type: 1

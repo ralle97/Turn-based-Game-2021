@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 [CreateAssetMenu(fileName = "New Item", menuName = "Item")]
 public class Item : ScriptableObject
@@ -20,10 +19,10 @@ public class Item : ScriptableObject
         this.itemCount = count;
     }
 
-    public void UseItem(Unit player)
+    public bool UseItem(Unit player)
     {
         if (itemCount <= 0)
-            return;
+            return false;
 
         if (itemName.Equals("Health Potion"))
         {
@@ -35,5 +34,7 @@ public class Item : ScriptableObject
             player.RestoreMP(restoreValue);
             itemCount--;
         }
+
+        return true;
     }
 }

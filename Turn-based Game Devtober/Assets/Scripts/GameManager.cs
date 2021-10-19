@@ -35,4 +35,5 @@ public class GameManager : MonoBehaviour
     public int miniBossesDefeated = 0;
 
     public List<Item> items;
+    public List<Spell> spells;
 }

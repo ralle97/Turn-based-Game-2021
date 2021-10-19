@@ -16,6 +16,7 @@ public class BattleManager : MonoBehaviour
     public GameObject mainBossPrefab;
 
     public GameObject itemPrefab;
+    public GameObject spellPrefab;
 
     [SerializeField]
     private Transform playerPosition;
@@ -27,12 +28,20 @@ public class BattleManager : MonoBehaviour
 
     [SerializeField]
     private TextMeshProUGUI dialogueText;
+    
     [SerializeField]
     private GameObject battleButtons;
     [SerializeField]
+    private Button attackButton;
+    
+    [SerializeField]
     private GameObject backButton;
+    
     [SerializeField]
     private GameObject itemsMenu;
+    [SerializeField]
+    private GameObject magicMenu;
+
     [SerializeField]
     private GameObject descriptionText;
 
@@ -62,20 +71,39 @@ public class BattleManager : MonoBehaviour
         playerHUD.SetHUD(playerUnit);
         enemyHUD.SetHUD(enemyUnit);
 
-        List<Item> items = GameManager.instance.items;
-        for (int i = 0; i < items.Count; i++)
+        foreach (Item itemGM in GameManager.instance.items)
         {
-            if (items[i].itemCount <= 0)
+            if (itemGM.itemCount <= 0)
                 continue;
 
             GameObject item = (GameObject)Instantiate(itemPrefab);
             
-            item.GetComponent<ItemUI>().item = items[i];
+            item.GetComponent<ItemUI>().item = itemGM;
             
             item.transform.SetParent(itemsMenu.transform);
 
             item.transform.localScale = Vector3.one;
             item.transform.position = new Vector3(item.transform.position.x, item.transform.position.y, 0);
+        }
+
+        foreach (Spell spellGM in GameManager.instance.spells)
+        {
+            if (!spellGM.learned)
+                continue;
+
+            GameObject spell = (GameObject)Instantiate(spellPrefab);
+
+            if (spellGM.spellName.Equals("Wind Slash"))
+            {
+                spellGM.effectValue = 2 * playerUnit.damage;
+            }
+
+            spell.GetComponent<SpellUI>().spell = spellGM;
+
+            spell.transform.SetParent(magicMenu.transform);
+
+            spell.transform.localScale = Vector3.one;
+            spell.transform.position = new Vector3(spell.transform.position.x, spell.transform.position.y, 0);
         }
 
         yield return new WaitForSeconds(2f);
@@ -104,9 +132,10 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    public void UseItem(Item item)
+    public IEnumerator UseItem(Item item)
     {
-        item.UseItem(playerUnit);
+        if (!item.UseItem(playerUnit))
+            yield return 0;
 
         OnBackButton();
         battleButtons.gameObject.SetActive(false);
@@ -114,15 +143,63 @@ public class BattleManager : MonoBehaviour
         dialogueText.text = "You used " + item.itemName + "!";
         playerHUD.UpdateHUD(playerUnit.currentHP, playerUnit.currentMP);
 
-        StartCoroutine(WaitFunction(2f));
+        yield return new WaitForSeconds(2f);
 
         state = BattleState.ENEMYTURN;
-        StartCoroutine(EnemyTurn());
+        
+        yield return StartCoroutine(EnemyTurn());
     }
 
-    IEnumerator WaitFunction(float toWait)
+    public IEnumerator CastSpell(Spell spell)
     {
-        yield return new WaitForSeconds(toWait);
+        if (playerUnit.currentMP < spell.mpCost)
+            yield return 0;
+
+        state = BattleState.ENEMYTURN;
+
+        bool isDead = false;
+        string addText = "";
+
+        if (spell.type == SpellType.RESTORE)
+        {
+            spell.CastSpell(playerUnit);
+        }
+        else if (spell.type == SpellType.DAMAGE)
+        {
+            if (spell.spellName.Equals("Eartsplitter"))
+            {
+                float randomize = Random.Range(0f, 1f);
+                if (randomize <= 0.15f)
+                {
+                    isDead = spell.CastSpell(enemyUnit, true);
+                    addText = "\nCRITICAL STRIKE!";
+                }
+            }
+            else
+                isDead = spell.CastSpell(enemyUnit);
+            
+            enemyHUD.SetHP(enemyUnit.currentHP);
+        }
+
+        playerUnit.currentMP -= spell.mpCost;
+        playerHUD.UpdateHUD(playerUnit.currentHP, playerUnit.currentMP);
+
+        OnBackButton();
+        battleButtons.gameObject.SetActive(false);
+
+        dialogueText.text = "You cast " + spell.spellName + "!" + addText;
+
+        yield return new WaitForSeconds(2f);
+
+        if (isDead)
+        {
+            state = BattleState.WON;
+            EndBattle();
+        }
+        else
+        {
+            yield return StartCoroutine(EnemyTurn());
+        }
     }
 
     IEnumerator EnemyTurn()
@@ -164,8 +241,9 @@ public class BattleManager : MonoBehaviour
     {
         if (state == BattleState.WON)
         {
-            float randomize = Random.Range(0f, 1f);
             dialogueText.text = "You won the battle!\nYou earned " + enemyUnit.experience + " XP.";
+
+            float randomize = Random.Range(0f, 1f);
             if (randomize <= 0.4f)
             {
                 dialogueText.text += "\nYou found health potion!";
@@ -209,25 +287,23 @@ public class BattleManager : MonoBehaviour
                 }
             }
 
-            StartCoroutine(WaitFunction(5f));
-
-            //sceneFader.FadeTo("PreviousExplorationStageFromPlayerPrefs");
+            Invoke("ReturnToGameWorld", 5f);
         }
         else if (state == BattleState.LOST)
         {
             dialogueText.text = "You were defeated.";
 
-            StartCoroutine(WaitFunction(2f));
-
-            //Show game over screen
+            Invoke("GameOver", 2f);
         }
     }
 
     private void PlayerTurn()
     {
-        dialogueText.text = "Chose an action: ";
+        dialogueText.text = "Choose an action: ";
 
-        battleButtons.gameObject.SetActive(true);
+        attackButton.Select();
+
+        battleButtons.SetActive(true);
     }
 
     public void OnAttackButton()
@@ -237,21 +313,23 @@ public class BattleManager : MonoBehaviour
 
         state = BattleState.ENEMYTURN;
 
-        battleButtons.gameObject.SetActive(false);
+        battleButtons.SetActive(false);
 
         StartCoroutine(PlayerAttack());
     }
 
     public void OnMagicButton()
     {
-        backButton.gameObject.SetActive(true);
+        backButton.SetActive(true);
+        descriptionText.SetActive(true);
+        magicMenu.SetActive(true);
     }
 
     public void OnItemsButton()
     {
-        backButton.gameObject.SetActive(true);
-        descriptionText.gameObject.SetActive(true);
-        itemsMenu.gameObject.SetActive(true);
+        backButton.SetActive(true);
+        descriptionText.SetActive(true);
+        itemsMenu.SetActive(true);
     }
 
     public void OnFleeButton()
@@ -261,9 +339,24 @@ public class BattleManager : MonoBehaviour
 
     public void OnBackButton()
     {
-        backButton.gameObject.SetActive(false);
-        itemsMenu.gameObject.SetActive(false);
-        //magicMenu.gameObject.SetActive(false);
-        descriptionText.gameObject.SetActive(false);
+        backButton.SetActive(false);
+        
+        if (itemsMenu.activeSelf)
+            itemsMenu.SetActive(false);
+        
+        if (magicMenu.activeSelf)
+            magicMenu.SetActive(false);
+        
+        descriptionText.SetActive(false);
+    }
+
+    private void GameOver()
+    {
+        //GameManager.instance.GameOver();
+    }
+
+    private void ReturnToGameWorld()
+    {
+        //sceneFader.FadeTo("PreviousExplorationStageFromPlayerPrefs");
     }
 }
