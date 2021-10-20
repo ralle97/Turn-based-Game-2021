@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Fireball
   m_EditorClassIdentifier: 
   spellName: Fireball
-  spellDescription: Fire sphere that burns your opponent for 20 HP.
+  spellDescription: Sphere of fire that burns your opponent for 20 HP.
   mpCost: 7
   effectValue: 20
   type: 1

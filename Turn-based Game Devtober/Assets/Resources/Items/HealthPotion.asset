@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 182d8bc4d24ab4040aa71f391f8c6161, type: 3}
   m_Name: HealthPotion
   m_EditorClassIdentifier: 
-  itemIcon: {fileID: 21300000, guid: 0af3e76c27132e64e90a97723583fb2f, type: 3}
+  itemIcon: {fileID: -7197033671315997693, guid: 7840b1d03ba51314aabdc2c860e2e5aa,
+    type: 3}
   itemName: Health Potion
   itemDescription: Restores 10 HP on use.
-  itemCount: 2
+  itemCount: 8
   restoreValue: 10
